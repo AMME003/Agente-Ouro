@@ -1,57 +1,33 @@
-import os
-import telebot
+import os, telebot, requests, time
 import google.generativeai as genai
-import requests
 from bs4 import BeautifulSoup
-import time
 
-# Configurações de Ambiente
+# Config
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+CHAT_ID = "735855732"
 
-# Inicialização
 genai.configure(api_key=GEMINI_KEY)
 model = genai.GenerativeModel('gemini-pro')
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-def buscar_dados_mercado():
-    url = "https://www.investing.com/commodities/gold-news"
-    headers = {'User-Agent': 'Mozilla/5.0'}
+def buscar():
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:5]]
-        return " | ".join(noticias)
-    except Exception as e:
-        return f"Erro ao buscar notícias: {e}"
+        res = requests.get("https://www.investing.com/commodities/gold-news", headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        return " | ".join([a.text.strip() for a in soup.find_all('a', class_='title')[:5]])
+    except: return "Erro na busca"
 
-def analisar_com_gemini(dados):
-    prompt = (
-        f"Analise estas notícias de Ouro/DXY: {dados}. "
-        "Busque sinais de baleias, manipulação ou compras de Bancos Centrais. "
-        "Responda de forma curta e bruta para um investidor."
-    )
+def analisar(dados):
     try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"Erro na IA: {e}"
-
-def executar_agente():
-    print("🚀 Agente iniciado...")
-    # Envia a confirmação para o seu ID: 735855732
-    bot.send_message(CHAT_ID, "🛡️ **Radar de Ouro Ativado.** Monitorando fluxo de baleias e DXY 24h.")
-    
-    while True:
-        try:
-            dados = buscar_dados_mercado()
-            relatorio = analisar_com_gemini(dados)
-            bot.send_message(CHAT_ID, f"⚠️ **RELATÓRIO INSIDER** ⚠️\n\n{relatorio}", parse_mode='Markdown')
-            time.sleep(3600) 
-        except Exception as e:
-            print(f"Erro: {e}")
-            time.sleep(60)
+        return model.generate_content(f"Analise como insider: {dados}. Foco em baleias e DXY.").text
+    except: return "Erro na IA"
 
 if __name__ == "__main__":
-    executar_agente()
+    bot.send_message(CHAT_ID, "🛡️ Agente Ativado.")
+    while True:
+        try:
+            relatorio = analisar(buscar())
+            bot.send_message(CHAT_ID, f"⚠️ RELATÓRIO: {relatorio}")
+            time.sleep(3600)
+        except: time.sleep(60)

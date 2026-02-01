@@ -2,38 +2,43 @@ import os, telebot, requests, time
 import google.generativeai as genai
 from bs4 import BeautifulSoup
 
-# Pega as chaves que já estão no seu Render
+# Configurações do Render
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = "735855732"
 
-# Configuração que realmente funciona
+# Forçamos a configuração da versão estável
 genai.configure(api_key=GEMINI_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-def buscar():
+def buscar_noticias():
     try:
-        header = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get("https://www.investing.com/commodities/gold-news", headers=header, timeout=15)
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get("https://www.investing.com/commodities/gold-news", headers=headers, timeout=15)
         soup = BeautifulSoup(res.text, 'html.parser')
         noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:5]]
         return " | ".join(noticias) if noticias else "Sem notícias."
-    except: return "Erro busca"
+    except:
+        return "Erro na busca"
 
-def analisar(dados):
+def analisar_mercado(dados):
     try:
-        prompt = f"Analise como insider (Ouro/DXY): {dados}. Seja curto e bruto."
-        response = model.generate_content(prompt)
+        # Gerando conteúdo de forma simples e direta
+        response = model.generate_content(f"Analise como trader (Ouro/DXY): {dados}")
         return response.text
     except Exception as e:
         return f"Erro na IA: {str(e)}"
 
 if __name__ == "__main__":
-    bot.send_message(CHAT_ID, "🛡️ **Sistema Estabilizado.** Monitorando...")
+    # Mensagem de boot para você saber que ele ligou
+    bot.send_message(CHAT_ID, "🛡️ Agente Ouro ligado. Aguardando processamento...")
     while True:
         try:
-            relatorio = analisar(buscar())
+            texto = buscar_noticias()
+            relatorio = analisar_mercado(texto)
             bot.send_message(CHAT_ID, f"⚠️ **RELATÓRIO:**\n\n{relatorio}")
-            time.sleep(3600) 
-        except: time.sleep(60)
+            time.sleep(3600) # 1 hora de espera
+        except Exception as e:
+            print(f"Erro: {e}")
+            time.sleep(60)

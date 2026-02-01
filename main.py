@@ -1,50 +1,90 @@
-import os, telebot, requests, time
-from google import genai
+import os
+import telebot
+import requests
+import time
 from bs4 import BeautifulSoup
+from google import genai
 
-# Configurações do Render
+# Configuracoes
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = "735855732"
 
-# Inicializa o Cliente Moderno (SDK 2.0 - 2026)
+# Inicializar cliente
 client = genai.Client(api_key=GEMINI_KEY)
+
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-def buscar_noticias():
+def buscar_dados():
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get("https://www.investing.com/commodities/gold-news", headers=headers, timeout=15)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        res = requests.get(
+            "https://www.investing.com/commodities/gold-news",
+            headers=headers,
+            timeout=15
+        )
         soup = BeautifulSoup(res.text, 'html.parser')
         noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:5]]
-        return " | ".join(noticias) if noticias else "Sem notícias agora."
+        return " | ".join(noticias) if noticias else "Sem noticias disponiveis."
     except Exception as e:
-        return f"Erro busca: {str(e)}"
+        return f"Erro ao buscar: {str(e)}"
 
-def analisar_mercado(dados):
+def analisar_ia(dados):
     try:
-        # Sintaxe oficial: client.models.generate_content
+        prompt = f"""Analise como insider (Ouro/DXY):
+
+{dados}
+
+Seja direto e brutal. Insights para trading agora."""
+        
+        # MODELO CORRETO DISPONIVEL NA NOVA SDK
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
-            contents=f"Analise como trader de elite focado em XAUUSD e DXY: {dados}. Seja curto, direto e brutalmente honesto."
+            model='gemini-1.5-flash-8b',
+            contents=prompt
         )
+        
         return response.text
+        
     except Exception as e:
-        if "429" in str(e):
-            return "⏳ Limite de quota atingido. Aguardando liberação do Google..."
-        return f"Erro técnico na IA: {str(e)}"
+        return f"Erro IA: {str(e)}"
 
 if __name__ == "__main__":
-    print("🚀 Agente Ouro 2.0 Online...")
-    # Mensagem de confirmação para o seu ID pessoal
-    bot.send_message(CHAT_ID, "🛡️ **Agente Ouro 2.0 Ativado.** Monitoramento iniciado via SDK 2026.")
+    # Inicializacao
+    try:
+        bot.send_message(CHAT_ID, "Agente Ouro 2.0 - Sistema Ativado")
+        print("Bot iniciado com sucesso")
+    except Exception as e:
+        print(f"Erro ao enviar mensagem inicial: {e}")
     
+    # Loop principal
     while True:
         try:
-            texto = buscar_noticias()
-            relatorio = analisar_mercado(texto)
-            bot.send_message(CHAT_ID, f"⚠️ **RELATÓRIO INSIDER:**\n\n{relatorio}")
-            time.sleep(3600) # 1 hora de intervalo para respeitar a quota gratuita
+            dados = buscar_dados()
+            relatorio = analisar_ia(dados)
+            
+            bot.send_message(
+                CHAT_ID,
+                f"RELATORIO OURO/DXY\n\n{relatorio}"
+            )
+            
+            print(f"Relatorio enviado: {time.strftime('%H:%M:%S')}")
+            time.sleep(3600)
+            
         except Exception as e:
-            print(f"Erro: {e}")
-            time.sleep(60)
+            print(f"Erro no loop: {e}")
+            time.sleep(300)
+```
+
+## 🔑 Mudanças importantes:
+
+1. **Removi o servidor HTTP** - não é necessário no Render para web services
+2. **Modelo alterado para `gemini-1.5-flash-8b`** - é o modelo disponível na nova SDK
+3. **Simplificado** - sem threads, sem porta, só o essencial
+
+## 📝 Configuração no Render
+
+**Start Command:**
+```
+python main.py

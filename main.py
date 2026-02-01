@@ -4,14 +4,13 @@ import requests
 import time
 from bs4 import BeautifulSoup
 from google import genai
-from google.genai import types
 
-# Configurações
+# Configuracoes
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = "735855732"
 
-# Inicializar cliente (nova forma oficial)
+# Inicializar cliente
 client = genai.Client(api_key=GEMINI_KEY)
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
@@ -28,7 +27,7 @@ def buscar_dados():
         )
         soup = BeautifulSoup(res.text, 'html.parser')
         noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:5]]
-        return " | ".join(noticias) if noticias else "Sem notícias disponíveis."
+        return " | ".join(noticias) if noticias else "Sem noticias disponiveis."
     except Exception as e:
         return f"Erro ao buscar: {str(e)}"
 
@@ -40,7 +39,6 @@ def analisar_ia(dados):
 
 Seja direto e brutal. Insights para trading agora."""
         
-        # Usar gemini-1.5-pro para análises mais profundas
         response = client.models.generate_content(
             model='gemini-1.5-pro',
             contents=prompt
@@ -49,7 +47,7 @@ Seja direto e brutal. Insights para trading agora."""
         return response.text
         
     except Exception as e:
-        return f"❌ Erro IA: {str(e)}"
+        return f"Erro IA: {str(e)}"
 
 def servidor_web():
     """Servidor HTTP para o Render"""
@@ -72,9 +70,9 @@ if __name__ == "__main__":
     import threading
     threading.Thread(target=servidor_web, daemon=True).start()
     
-    # Inicialização
+    # Inicializacao
     try:
-        bot.send_message(CHAT_ID, "🛡️ **Agente Ouro 2.0 - Sistema Ativado**")
+        bot.send_message(CHAT_ID, "Agente Ouro 2.0 - Sistema Ativado")
     except Exception as e:
         print(f"Erro ao enviar mensagem inicial: {e}")
     
@@ -86,51 +84,12 @@ if __name__ == "__main__":
             
             bot.send_message(
                 CHAT_ID,
-                f"⚠️ **RELATÓRIO OURO/DXY**\n\n{relatorio}",
-                parse_mode='Markdown'
+                f"RELATORIO OURO/DXY\n\n{relatorio}"
             )
             
-            print(f"✅ Relatório enviado: {time.strftime('%H:%M:%S')}")
-            time.sleep(3600)  # 1 hora
+            print(f"Relatorio enviado: {time.strftime('%H:%M:%S')}")
+            time.sleep(3600)
             
         except Exception as e:
-            print(f"❌ Erro no loop: {e}")
-            time.sleep(300)  # 5 min se der erro
-```
-
-### 3. **Configuração no Render**
-
-**Start Command:**
-```
-python main.py
-```
-
-**Environment Variables:**
-- `GEMINI_API_KEY` = sua chave do Gemini
-- `TELEGRAM_TOKEN` = token do bot
-- `PORT` = 10000
-
-### 4. **Deploy no Render**
-
-1. ✅ Faça commit dos arquivos no GitHub
-2. ✅ No Render: **Manual Deploy** 
-3. ✅ Marque **"Clear build cache & deploy"**
-4. ✅ Aguarde 3-5 minutos
-
-## 🔑 Mudanças Críticas (2025 → 2026):
-
-| ❌ Biblioteca Antiga (morreu 30/11/2025) | ✅ Nova SDK Oficial |
-|------------------------------------------|---------------------|
-| `google-generativeai` | `google-genai` |
-| `import google.generativeai as genai` | `from google import genai` |
-| `genai.configure(api_key=...)` | `client = genai.Client(api_key=...)` |
-| `model.generate_content()` | `client.models.generate_content()` |
-| `gemini-1.5-flash` | `gemini-2.0-flash-exp` |
-
-## 📊 O que esperar nos logs:
-
-✅ **Sucesso:**
-```
-Successfully installed google-genai
-🛡️ Agente Ouro 2.0 - Sistema Ativado
-✅ Relatório enviado: 16:39:46
+            print(f"Erro no loop: {e}")
+            time.sleep(300)

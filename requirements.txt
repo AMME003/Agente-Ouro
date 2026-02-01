@@ -1,4 +1,1 @@
-pyTelegramBotAPI
 google-genai
-requests
-beautifulsoup4

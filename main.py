@@ -40,6 +40,7 @@ def analisar_com_gemini(dados):
 
 def executar_agente():
     print("🚀 Agente iniciado...")
+    # Envia a confirmação para o seu ID: 735855732
     bot.send_message(CHAT_ID, "🛡️ **Radar de Ouro Ativado.** Monitorando fluxo de baleias e DXY 24h.")
     
     while True:

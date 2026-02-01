@@ -2,10 +2,10 @@ import os, telebot, requests, time
 from google import genai
 from bs4 import BeautifulSoup
 
-# Configurações obtidas do Environment Variables do Render
+# Configuração
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-CHAT_ID = "735855732" # Seu ID confirmado
+CHAT_ID = "735855732"
 
 client = genai.Client(api_key=GEMINI_KEY)
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
@@ -22,23 +22,23 @@ def buscar_noticias():
 
 def analisar_mercado(dados):
     try:
-        # Usando o modelo estável 1.5-flash
+        # Mudança estratégica para o modelo 2.0
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
-            contents=f"Analise como insider de mercado (XAUUSD e DXY): {dados}"
+            model="gemini-2.0-flash-exp", 
+            contents=f"Analise como insider de mercado (Ouro e DXY): {dados}"
         )
         return response.text
     except Exception as e:
         return f"Erro técnico na IA: {str(e)}"
 
 if __name__ == "__main__":
-    bot.send_message(CHAT_ID, "🛡️ **Agente Ouro Online e Atualizado.**")
+    bot.send_message(CHAT_ID, "🛡️ **Agente Ouro Online.** Analisando mercado...")
     while True:
         try:
             dados = buscar_noticias()
             relatorio = analisar_mercado(dados)
             bot.send_message(CHAT_ID, f"⚠️ **RELATÓRIO INSIDER:**\n\n{relatorio}")
-            time.sleep(3600) # Monitora de hora em hora
+            time.sleep(3600) # Monitora de 1 em 1 hora
         except Exception as e:
             print(f"Erro no loop: {e}")
             time.sleep(60)

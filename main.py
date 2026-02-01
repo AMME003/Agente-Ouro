@@ -18,8 +18,8 @@ def buscar_dados():
     except: return "Erro na busca"
 
 def analisar_ia(dados):
-    # Mudança para a versão estável V1 e modelo 1.5-flash-latest
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}"
+    # Mudança para o modelo 1.0-pro (Máxima compatibilidade)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key={GEMINI_KEY}"
     payload = {"contents": [{"parts": [{"text": f"Analise como insider (Ouro/DXY): {dados}. Seja curto e bruto."}]}]}
     
     try:
@@ -29,13 +29,12 @@ def analisar_ia(dados):
         if "candidates" in res_json:
             return res_json['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Isso vai imprimir o erro exato no seu Telegram para resolvermos de vez
-            return f"ERRO REAL: {res_json}"
+            return f"ERRO FINAL: {res_json.get('error', {}).get('message', 'Acesse o link do passo 2')}"
     except Exception as e:
         return f"Erro de conexão: {str(e)}"
 
 if __name__ == "__main__":
-    bot.send_message(CHAT_ID, "🛡️ **Agente Ouro: Tentativa de Estabilização...**")
+    bot.send_message(CHAT_ID, "🛡️ **Agente Ouro: Forçando Conexão Estável...**")
     while True:
         try:
             relatorio = analisar_ia(buscar_dados())

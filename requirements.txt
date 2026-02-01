@@ -1,4 +1,7 @@
 pyTelegramBotAPI
-google-generativeai
+
+google-genai
+
 requests
+
 beautifulsoup4

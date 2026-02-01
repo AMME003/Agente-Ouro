@@ -75,16 +75,3 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Erro no loop: {e}")
             time.sleep(300)
-```
-
-## 🔑 Mudanças importantes:
-
-1. **Removi o servidor HTTP** - não é necessário no Render para web services
-2. **Modelo alterado para `gemini-1.5-flash-8b`** - é o modelo disponível na nova SDK
-3. **Simplificado** - sem threads, sem porta, só o essencial
-
-## 📝 Configuração no Render
-
-**Start Command:**
-```
-python main.py

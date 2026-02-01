@@ -40,9 +40,9 @@ def analisar_ia(dados):
 
 Seja direto e brutal. Insights para trading agora."""
         
-        # Sintaxe correta da nova SDK
+        # Usar gemini-1.5-pro para análises mais profundas
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-1.5-pro',
             contents=prompt
         )
         

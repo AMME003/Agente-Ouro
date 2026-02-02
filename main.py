@@ -4,7 +4,7 @@ import requests
 import time
 from bs4 import BeautifulSoup
 
-GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
+OPENAI_KEY = os.environ.get('OPENAI_API_KEY')  # Adicione no Render
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = "735855732"
 
@@ -22,30 +22,28 @@ def buscar_dados():
 
 def analisar_ia(dados):
     try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+        url = "https://api.openai.com/v1/chat/completions"
         
         headers = {
             'Content-Type': 'application/json',
-            'x-goog-api-key': GEMINI_KEY
+            'Authorization': f'Bearer {OPENAI_KEY}'
         }
         
         payload = {
-            "contents": [{"parts": [{"text": f"Analise mercado Ouro/DXY: {dados}"}]}]
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": f"Analise como insider (Ouro/DXY): {dados}. Seja brutal e direto."}],
+            "max_tokens": 500
         }
         
         response = requests.post(url, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code != 200:
-            return f"Erro API: {response.status_code} - {response.text[:200]}"
-        
         result = response.json()
-        return result['candidates'][0]['content']['parts'][0]['text']
+        return result['choices'][0]['message']['content']
         
     except Exception as e:
         return f"Erro: {str(e)}"
 
 if __name__ == "__main__":
-    bot.send_message(CHAT_ID, "Sistema Ativado")
+    bot.send_message(CHAT_ID, "Sistema Ativado - ChatGPT")
     
     while True:
         try:

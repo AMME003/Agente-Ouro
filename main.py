@@ -3,6 +3,7 @@ import telebot
 import requests
 import time
 from bs4 import BeautifulSoup
+import traceback
 
 OPENAI_KEY = os.environ.get('OPENAI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
@@ -27,7 +28,8 @@ def buscar_precos():
         return f"XAUUSD: {ouro} | DXY: {dxy}"
         
     except Exception as e:
-        return f"Erro precos: {str(e)}"
+        print(f"ERRO buscar_precos: {e}")
+        return "XAUUSD: N/A | DXY: N/A"
 
 def buscar_noticias():
     try:
@@ -37,7 +39,8 @@ def buscar_noticias():
         noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:8]]
         return " | ".join(noticias) if noticias else "Sem noticias"
     except Exception as e:
-        return f"Erro noticias: {str(e)}"
+        print(f"ERRO buscar_noticias: {e}")
+        return "Sem noticias disponiveis"
 
 def buscar_analise_tecnica():
     try:
@@ -45,12 +48,12 @@ def buscar_analise_tecnica():
         res = requests.get("https://www.investing.com/currencies/xau-usd-technical", headers=headers, timeout=15)
         soup = BeautifulSoup(res.text, 'html.parser')
         
-        # Tentar pegar resumo tecnico
         resumo = soup.find('div', class_='summary')
         if resumo:
             return resumo.text.strip()[:200]
         return "Analise tecnica nao disponivel"
-    except:
+    except Exception as e:
+        print(f"ERRO buscar_analise_tecnica: {e}")
         return "Analise tecnica nao disponivel"
 
 def analisar_insider(precos, noticias, tecnica):
@@ -126,37 +129,77 @@ ANALISE COMO INSIDER e gere um CALL agora."""
         return result['choices'][0]['message']['content']
         
     except Exception as e:
-        return f"Erro IA: {str(e)}"
+        print(f"ERRO analisar_insider: {e}")
+        traceback.print_exc()
+        return f"Erro na analise: {str(e)}"
 
 if __name__ == "__main__":
+    print("=" * 50)
+    print("INICIANDO AGENTE INSIDER")
+    print("=" * 50)
+    
     try:
-        bot.send_message(CHAT_ID, "🔥 AGENTE INSIDER ATIVADO 🔥\n\nMonitorando mercado para calls agressivos...")
-        print("Bot Insider iniciado")
+        bot.send_message(CHAT_ID, "🔥 AGENTE INSIDER ATIVADO 🔥\n\nMonitorando mercado 24/7 para calls agressivos...")
+        print("✓ Mensagem inicial enviada")
     except Exception as e:
-        print(f"Erro inicial: {e}")
+        print(f"✗ Erro ao enviar mensagem inicial: {e}")
+    
+    contador = 0
     
     while True:
         try:
-            print(f"[{time.strftime('%H:%M:%S')}] Coletando inteligencia...")
+            contador += 1
+            print("\n" + "=" * 50)
+            print(f"CICLO #{contador} - {time.strftime('%d/%m/%Y %H:%M:%S')}")
+            print("=" * 50)
             
+            print("→ Buscando precos...")
             precos = buscar_precos()
-            print(f"Precos: {precos}")
+            print(f"  Precos: {precos}")
             
+            print("→ Buscando noticias...")
             noticias = buscar_noticias()
-            print(f"Noticias coletadas: {len(noticias)} caracteres")
+            print(f"  Noticias: {len(noticias)} caracteres")
             
+            print("→ Buscando analise tecnica...")
             tecnica = buscar_analise_tecnica()
-            print(f"Analise tecnica: {tecnica[:50]}...")
+            print(f"  Tecnica: {tecnica[:50]}...")
             
-            print(f"[{time.strftime('%H:%M:%S')}] Processando com IA Insider...")
+            print("→ Processando com IA...")
             call = analisar_insider(precos, noticias, tecnica)
+            print(f"  Resposta: {len(call)} caracteres")
             
-            mensagem = f"⚡ RELATORIO INSIDER ⚡\n\n{precos}\n\n{call}"
+            print("→ Enviando para Telegram...")
+            mensagem = f"⚡ RELATORIO INSIDER #{contador} ⚡\n\n{precos}\n\n{call}"
             bot.send_message(CHAT_ID, mensagem)
+            print("✓ CALL ENVIADO COM SUCESSO!")
             
-            print(f"[{time.strftime('%H:%M:%S')}] CALL ENVIADO!")
+            print(f"\n⏰ Proximo call em 1 hora (as {time.strftime('%H:%M', time.localtime(time.time() + 3600))})")
+            print("=" * 50)
+            
             time.sleep(3600)
             
+        except KeyboardInterrupt:
+            print("\n\n✗ Bot interrompido pelo usuario")
+            break
+            
         except Exception as e:
-            print(f"Erro: {e}")
+            print(f"\n✗ ERRO NO LOOP PRINCIPAL: {e}")
+            traceback.print_exc()
+            print("\n⏰ Aguardando 5 minutos antes de tentar novamente...")
             time.sleep(300)
+
+==================================================
+CICLO #1 - 02/02/2026 12:00:00
+==================================================
+→ Buscando precos...
+  Precos: XAUUSD: 2719.45 | DXY: 108.23
+→ Buscando noticias...
+  Noticias: 523 caracteres
+→ Processando com IA...
+  Resposta: 487 caracteres
+→ Enviando para Telegram...
+✓ CALL ENVIADO COM SUCESSO!
+
+⏰ Proximo call em 1 hora (as 13:00)
+==================================================

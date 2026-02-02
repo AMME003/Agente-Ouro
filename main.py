@@ -5,7 +5,6 @@ import time
 import json
 from bs4 import BeautifulSoup
 
-# Configuracoes
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = "735855732"
@@ -30,17 +29,12 @@ def buscar_dados():
 
 def analisar_ia(dados):
     try:
-        # URL CORRETA da API (v1beta)
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}"
         
         payload = {
             "contents": [{
                 "parts": [{
-                    "text": f"""Analise como insider do mercado financeiro (Ouro/DXY):
-
-{dados}
-
-Seja direto, brutal e objetivo. Foque em insights acionaveis para trading."""
+                    "text": f"Analise como insider do mercado financeiro (Ouro/DXY): {dados}. Seja direto, brutal e objetivo. Foque em insights acionaveis para trading."
                 }]
             }]
         }
@@ -55,14 +49,14 @@ Seja direto, brutal e objetivo. Foque em insights acionaveis para trading."""
         return texto
         
     except requests.exceptions.HTTPError as e:
-        return f"Erro HTTP na API: {e.response.status_code} - {e.response.text}"
+        return f"Erro HTTP: {e.response.status_code} - {e.response.text}"
     except Exception as e:
-        return f"Erro na analise IA: {str(e)}"
+        return f"Erro IA: {str(e)}"
 
 if __name__ == "__main__":
     try:
         bot.send_message(CHAT_ID, "Agente Ouro 2.0 - Sistema Ativado")
-        print("Bot iniciado com sucesso")
+        print("Bot iniciado")
     except Exception as e:
         print(f"Erro inicial: {e}")
     
@@ -71,12 +65,12 @@ if __name__ == "__main__":
             print(f"[{time.strftime('%H:%M:%S')}] Coletando dados...")
             dados = buscar_dados()
             
-            print(f"[{time.strftime('%H:%M:%S')}] Analisando com IA...")
+            print(f"[{time.strftime('%H:%M:%S')}] Analisando...")
             relatorio = analisar_ia(dados)
             
             bot.send_message(CHAT_ID, f"RELATORIO OURO/DXY\n\n{relatorio}")
             
-            print(f"[{time.strftime('%H:%M:%S')}] Enviado! Proxima em 1h")
+            print(f"[{time.strftime('%H:%M:%S')}] Enviado!")
             time.sleep(3600)
             
         except Exception as e:
@@ -84,14 +78,8 @@ if __name__ == "__main__":
             time.sleep(300)
 ```
 
-## 🔑 Mudanças importantes:
-
-1. **Endpoint correto:** `v1beta` (não `v1`)
-2. **Modelo correto:** `gemini-1.5-flash-latest` (com sufixo `-latest`)
-3. **Melhor tratamento de erros** para ver a resposta completa da API
-
-## ⚠️ IMPORTANTE: Verifique sua chave API
-
-Vi que você expôs sua chave API na mensagem anterior:
+## 📝 requirements.txt
 ```
-AIzaSyDGeWJZinHygLD0F19g4Y2oGXoEczW32s0
+pyTelegramBotAPI
+requests
+beautifulsoup4

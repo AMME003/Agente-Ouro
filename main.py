@@ -2,7 +2,6 @@ import os
 import telebot
 import requests
 import time
-import json
 from bs4 import BeautifulSoup
 
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
@@ -13,73 +12,46 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 def buscar_dados():
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        res = requests.get(
-            "https://www.investing.com/commodities/gold-news",
-            headers=headers,
-            timeout=15
-        )
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get("https://www.investing.com/commodities/gold-news", headers=headers, timeout=15)
         soup = BeautifulSoup(res.text, 'html.parser')
         noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:5]]
-        return " | ".join(noticias) if noticias else "Sem noticias disponiveis."
-    except Exception as e:
-        return f"Erro ao buscar: {str(e)}"
+        return " | ".join(noticias) if noticias else "Sem noticias"
+    except:
+        return "Erro ao buscar"
 
 def analisar_ia(dados):
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
         
-        payload = {
-            "contents": [{
-                "parts": [{
-                    "text": f"Analise como insider do mercado financeiro (Ouro/DXY): {dados}. Seja direto, brutal e objetivo. Foque em insights acionaveis para trading."
-                }]
-            }]
+        headers = {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_KEY
         }
         
-        headers = {'Content-Type': 'application/json'}
+        payload = {
+            "contents": [{"parts": [{"text": f"Analise mercado Ouro/DXY: {dados}"}]}]
+        }
         
         response = requests.post(url, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
+        
+        if response.status_code != 200:
+            return f"Erro API: {response.status_code} - {response.text[:200]}"
         
         result = response.json()
-        texto = result['candidates'][0]['content']['parts'][0]['text']
-        return texto
+        return result['candidates'][0]['content']['parts'][0]['text']
         
-    except requests.exceptions.HTTPError as e:
-        return f"Erro HTTP: {e.response.status_code} - {e.response.text}"
     except Exception as e:
-        return f"Erro IA: {str(e)}"
+        return f"Erro: {str(e)}"
 
 if __name__ == "__main__":
-    try:
-        bot.send_message(CHAT_ID, "Agente Ouro 2.0 - Sistema Ativado")
-        print("Bot iniciado")
-    except Exception as e:
-        print(f"Erro inicial: {e}")
+    bot.send_message(CHAT_ID, "Sistema Ativado")
     
     while True:
         try:
-            print(f"[{time.strftime('%H:%M:%S')}] Coletando dados...")
             dados = buscar_dados()
-            
-            print(f"[{time.strftime('%H:%M:%S')}] Analisando...")
             relatorio = analisar_ia(dados)
-            
-            bot.send_message(CHAT_ID, f"RELATORIO OURO/DXY\n\n{relatorio}")
-            
-            print(f"[{time.strftime('%H:%M:%S')}] Enviado!")
+            bot.send_message(CHAT_ID, f"RELATORIO:\n\n{relatorio}")
             time.sleep(3600)
-            
-        except Exception as e:
-            print(f"Erro: {e}")
+        except:
             time.sleep(300)
-
-
-## 📝 requirements.txt
-
-pyTelegramBotAPI
-requests
-beautifulsoup4

@@ -76,10 +76,10 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Erro: {e}")
             time.sleep(300)
-```
+
 
 ## 📝 requirements.txt
-```
+
 pyTelegramBotAPI
 requests
 beautifulsoup4

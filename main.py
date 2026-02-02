@@ -189,17 +189,3 @@ if __name__ == "__main__":
             print("\n⏰ Aguardando 5 minutos antes de tentar novamente...")
             time.sleep(300)
 
-==================================================
-CICLO #1 - 02/02/2026 12:00:00
-==================================================
-→ Buscando precos...
-  Precos: XAUUSD: 2719.45 | DXY: 108.23
-→ Buscando noticias...
-  Noticias: 523 caracteres
-→ Processando com IA...
-  Resposta: 487 caracteres
-→ Enviando para Telegram...
-✓ CALL ENVIADO COM SUCESSO!
-
-⏰ Proximo call em 1 hora (as 13:00)
-==================================================

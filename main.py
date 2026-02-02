@@ -34,7 +34,7 @@ def analisar_ia(dados):
             "messages": [
                 {
                     "role": "system",
-                    "content": "Voce e um analista insider do mercado financeiro. Seja direto, brutal e objetivo em suas analises."
+                    "content": "Voce e um analista insider do mercado financeiro. Seja direto, brutal e objetivo em suas analises, faça suas análises com base no preço atual."
                 },
                 {
                     "role": "user",

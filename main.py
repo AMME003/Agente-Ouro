@@ -30,7 +30,8 @@ def buscar_dados():
 
 def analisar_ia(dados):
     try:
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+        # URL CORRETA da API (v1beta)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}"
         
         payload = {
             "contents": [{
@@ -53,6 +54,8 @@ Seja direto, brutal e objetivo. Foque em insights acionaveis para trading."""
         texto = result['candidates'][0]['content']['parts'][0]['text']
         return texto
         
+    except requests.exceptions.HTTPError as e:
+        return f"Erro HTTP na API: {e.response.status_code} - {e.response.text}"
     except Exception as e:
         return f"Erro na analise IA: {str(e)}"
 
@@ -79,3 +82,16 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Erro: {e}")
             time.sleep(300)
+```
+
+## 🔑 Mudanças importantes:
+
+1. **Endpoint correto:** `v1beta` (não `v1`)
+2. **Modelo correto:** `gemini-1.5-flash-latest` (com sufixo `-latest`)
+3. **Melhor tratamento de erros** para ver a resposta completa da API
+
+## ⚠️ IMPORTANTE: Verifique sua chave API
+
+Vi que você expôs sua chave API na mensagem anterior:
+```
+AIzaSyDGeWJZinHygLD0F19g4Y2oGXoEczW32s0

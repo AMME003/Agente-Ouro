@@ -13,97 +13,111 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 def buscar_precos():
     try:
-        # API gratuita de forex/commodities
-        url = "https://api.exchangerate-api.com/v4/latest/USD"
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        # Calcular preco aproximado do ouro (inverso)
-        # XAU = onca troy de ouro em USD
-        # Usando proxy: buscar de outra API
-        
-        # Alternativa: API metals
-        metals_url = "https://api.metals.live/v1/spot"
-        metals_res = requests.get(metals_url, timeout=10)
-        metals_data = metals_res.json()
-        
-        ouro = None
-        for metal in metals_data:
-            if metal.get('metal') == 'gold':
-                ouro = metal.get('price')
-                break
-        
-        # DXY via outra fonte
-        dxy_url = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=demo"
-        
-        if ouro:
-            ouro_str = f"{ouro:.2f}"
-        else:
-            ouro_str = "N/A"
-        
-        # Buscar DXY de forma alternativa (via correlacao EUR/USD inversa)
+        # API 1: Metals-API (gratuita, dados reais de commodities)
+        metals_url = "https://api.metals.live/v1/spot/gold"
         try:
-            eurusd_url = "https://api.fxratesapi.com/latest?base=USD&symbols=EUR"
-            eur_res = requests.get(eurusd_url, timeout=10)
-            eur_data = eur_res.json()
-            eur_rate = eur_data.get('rates', {}).get('EUR', 0)
+            metals_res = requests.get(metals_url, timeout=10)
+            metals_data = metals_res.json()
             
-            # DXY aproximado (correlacao inversa com EUR/USD)
-            if eur_rate > 0:
-                dxy_aprox = 100 / eur_rate * 0.57  # Fator de ajuste
-                dxy_str = f"{dxy_aprox:.2f}"
+            # metals.live retorna array de dados
+            if isinstance(metals_data, list) and len(metals_data) > 0:
+                ouro_price = metals_data[0].get('price')
+                if ouro_price:
+                    ouro = f"{ouro_price:.2f}"
+                    print(f"  [metals.live] Ouro: {ouro}")
             else:
-                dxy_str = "N/A"
-        except:
-            dxy_str = "N/A"
+                ouro = None
+        except Exception as e:
+            print(f"  [metals.live] Falhou: {e}")
+            ouro = None
         
-        return f"XAUUSD: {ouro_str} | DXY: {dxy_str}"
+        # API 2: Goldapi.io (gratuita, 100 requests/mes)
+        if not ouro:
+            try:
+                goldapi_url = "https://www.goldapi.io/api/XAU/USD"
+                goldapi_headers = {"x-access-token": "goldapi-demo"}  # Use API key real se tiver
+                gold_res = requests.get(goldapi_url, headers=goldapi_headers, timeout=10)
+                gold_data = gold_res.json()
+                
+                if 'price' in gold_data:
+                    ouro = f"{gold_data['price']:.2f}"
+                    print(f"  [goldapi.io] Ouro: {ouro}")
+            except Exception as e:
+                print(f"  [goldapi.io] Falhou: {e}")
+        
+        # API 3: Twelve Data (gratuita, 800 calls/dia) - MELHOR OPCAO
+        if not ouro:
+            try:
+                twelve_url = f"https://api.twelvedata.com/price?symbol=XAU/USD&apikey={os.environ.get('TWELVE_API_KEY')}"
+                twelve_res = requests.get(twelve_url, timeout=10)
+                twelve_data = twelve_res.json()
+                
+                if 'price' in twelve_data:
+                    ouro = f"{float(twelve_data['price']):.2f}"
+                    print(f"  [twelvedata] Ouro: {ouro}")
+            except Exception as e:
+                print(f"  [twelvedata] Falhou: {e}")
+        
+        # Buscar DXY
+        dxy = None
+        
+        # API: Twelve Data para DXY
+        try:
+            dxy_url = "https://api.twelvedata.com/price?symbol=DXY&apikey=demo"
+            dxy_res = requests.get(dxy_url, timeout=10)
+            dxy_data = dxy_res.json()
+            
+            if 'price' in dxy_data:
+                dxy = f"{float(dxy_data['price']):.2f}"
+                print(f"  [twelvedata] DXY: {dxy}")
+        except Exception as e:
+            print(f"  DXY falhou: {e}")
+        
+        # Resultado final
+        ouro_final = ouro if ouro else "ERRO"
+        dxy_final = dxy if dxy else "ERRO"
+        
+        if ouro_final == "ERRO" or dxy_final == "ERRO":
+            return f"XAUUSD: {ouro_final} | DXY: {dxy_final} (APIs indisponiveis - aguarde proximo ciclo)"
+        
+        return f"XAUUSD: {ouro_final} | DXY: {dxy_final}"
         
     except Exception as e:
-        print(f"ERRO buscar_precos: {e}")
+        print(f"ERRO GERAL buscar_precos: {e}")
         traceback.print_exc()
-        
-        # FALLBACK: Usar precos hardcoded recentes se APIs falharem
-        return "XAUUSD: 2719.50 (estimado) | DXY: 108.20 (estimado)"
+        return "XAUUSD: ERRO | DXY: ERRO (Falha nas APIs)"
 
 def buscar_noticias():
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
-        # Tentar diferentes fontes
-        urls = [
-            "https://www.investing.com/commodities/gold-news",
-            "https://www.marketwatch.com/investing/future/gc00",
-            "https://www.kitco.com/news/"
-        ]
+        res = requests.get("https://www.investing.com/commodities/gold-news", headers=headers, timeout=15)
+        soup = BeautifulSoup(res.text, 'html.parser')
         
-        for url in urls:
-            try:
-                res = requests.get(url, headers=headers, timeout=15)
-                soup = BeautifulSoup(res.text, 'html.parser')
-                
-                # Investing.com
-                if 'investing.com' in url:
-                    noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:8]]
-                # MarketWatch
-                elif 'marketwatch.com' in url:
-                    noticias = [h.text.strip() for h in soup.find_all('h3', class_='article__headline')[:8]]
-                # Kitco
-                elif 'kitco.com' in url:
-                    noticias = [a.text.strip() for a in soup.find_all('a', class_='news-analysis__title')[:8]]
-                
-                if noticias and len(noticias) > 0:
-                    return " | ".join(noticias)
-            except:
-                continue
+        # Tentar diferentes seletores
+        noticias = []
+        
+        # Seletor 1
+        noticias = [a.text.strip() for a in soup.find_all('a', class_='title')[:8]]
+        
+        # Seletor 2 (se falhar)
+        if not noticias:
+            noticias = [a.text.strip() for a in soup.find_all('a', attrs={'data-test': 'article-title-link'})[:8]]
+        
+        # Seletor 3
+        if not noticias:
+            noticias = [h2.text.strip() for h2 in soup.find_all('h2')[:8]]
+        
+        if noticias and len(noticias) > 2:
+            return " | ".join(noticias)
         
         return "Noticias nao disponiveis no momento"
         
     except Exception as e:
         print(f"ERRO buscar_noticias: {e}")
-        return "Noticias nao disponiveis"
+        return "Sem noticias"
 
 def analisar_insider(precos, noticias):
     try:
@@ -119,45 +133,48 @@ def analisar_insider(precos, noticias):
             "messages": [
                 {
                     "role": "system",
-                    "content": """Voce e um TRADER INSIDER profissional. 
+                    "content": """Voce e um TRADER INSIDER profissional especializado em XAUUSD e DXY.
 
-IMPORTANTE: Se os precos estiverem como "estimado" ou "N/A", SEMPRE mencione que sao estimativas e que o trader deve CONFIRMAR OS PRECOS REAIS antes de entrar.
+REGRAS CRITICAS:
+- Se precos mostrarem "ERRO", SEMPRE mencione que dados estao indisponiveis e aguarde proximo ciclo
+- Use APENAS precos numericos reais fornecidos
+- NUNCA invente precos
 
-Seu objetivo:
+SEU OBJETIVO:
 
-1. IDENTIFICAR BRECHAS nas noticias:
-   - Declaracoes de Fed/BCE/BoJ
-   - Dados economicos surpresa
-   - Mudancas em politicas monetarias
-   - Sentimento de risco (risk-on/risk-off)
+1. IDENTIFICAR BRECHAS:
+   - Decisoes de Fed/BCE/BoJ
+   - Dados economicos (NFP, CPI, PMI)
+   - Tensoes geopoliticas
+   - Sentiment shifts
 
 2. ANTECIPAR BIG PLAYERS:
-   - Fluxo institucional
-   - Safe-haven flows
-   - Correlacoes ouro/dolar/bonds
-   - Posicionamento de bancos centrais
+   - Fluxo institucional para safe-haven
+   - Central banks buying gold
+   - Hedge funds positioning
+   - Correlation breaks
 
-3. GERAR CALL DIRETO com precos REAIS ou ESTIMADOS:
+3. GERAR CALL DIRETO:
 
-FORMATO OBRIGATORIO:
+FORMATO:
 🎯 CALL: [COMPRA/VENDA]
-📊 Entrada: [preco] (CONFIRMAR PRECO REAL)
+📊 Entrada: [preco exato fornecido]
 🛡️ Stop Loss: [preco]
 💰 Take Profit: [preco]
-⚡ Justificativa: [2-3 linhas]
-🔍 Sinais Ocultos: [big players]
+⚡ Justificativa: [2-3 linhas brutais]
+🔍 Sinais Ocultos: [smart money flows]
 
-Se precos estiverem "N/A", use logica baseada em noticias e tendencias."""
+SEJA DIRETO E AGRESSIVO."""
                 },
                 {
                     "role": "user",
-                    "content": f"""DADOS:
+                    "content": f"""DADOS REAIS ATUAIS:
 {precos}
 
-NOTICIAS:
+NOTICIAS RECENTES:
 {noticias}
 
-Gere um CALL AGORA."""
+Gere CALL com base nos dados REAIS fornecidos."""
                 }
             ],
             "max_tokens": 800,
@@ -168,26 +185,26 @@ Gere um CALL AGORA."""
         result = response.json()
         
         if 'error' in result:
-            return f"ERRO: {result['error'].get('message', 'Erro')}"
+            return f"ERRO OPENAI: {result['error'].get('message')}"
         
         if 'choices' not in result:
-            return f"Resposta invalida"
+            return "Resposta invalida da API"
         
         return result['choices'][0]['message']['content']
         
     except Exception as e:
         print(f"ERRO analisar_insider: {e}")
         traceback.print_exc()
-        return f"Erro na analise: {str(e)}"
+        return f"Erro: {str(e)}"
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("INICIANDO AGENTE INSIDER")
+    print("AGENTE INSIDER - DADOS REAIS")
     print("=" * 50)
     
     try:
-        bot.send_message(CHAT_ID, "🔥 AGENTE INSIDER ATIVADO 🔥\n\nMonitorando mercado 24/7...")
-        print("✓ Mensagem inicial enviada")
+        bot.send_message(CHAT_ID, "🔥 AGENTE INSIDER ATIVADO 🔥\n\nDados em tempo real ativados...")
+        print("✓ Bot iniciado")
     except Exception as e:
         print(f"✗ Erro: {e}")
     
@@ -197,26 +214,32 @@ if __name__ == "__main__":
         try:
             contador += 1
             print("\n" + "=" * 50)
-            print(f"CICLO #{contador} - {time.strftime('%H:%M:%S')}")
+            print(f"CICLO #{contador} - {time.strftime('%d/%m %H:%M:%S')}")
             print("=" * 50)
             
-            print("→ Buscando precos...")
+            print("→ Buscando precos REAIS (testando 3 APIs)...")
             precos = buscar_precos()
-            print(f"  {precos}")
+            print(f"  RESULTADO: {precos}")
+            
+            # Se precos falharam, aguardar e tentar novamente
+            if "ERRO" in precos:
+                print("⚠️ APIs indisponiveis, aguardando 2 minutos...")
+                time.sleep(120)
+                continue
             
             print("→ Buscando noticias...")
             noticias = buscar_noticias()
             print(f"  {len(noticias)} caracteres")
             
-            print("→ Processando IA...")
+            print("→ Processando IA INSIDER...")
             call = analisar_insider(precos, noticias)
             
-            print("→ Enviando...")
-            mensagem = f"⚡ INSIDER #{contador} ⚡\n\n{precos}\n\n{call}"
+            print("→ Enviando CALL...")
+            mensagem = f"⚡ INSIDER #{contador} ⚡\n{time.strftime('%d/%m %H:%M')}\n\n{precos}\n\n{call}"
             bot.send_message(CHAT_ID, mensagem)
-            print("✓ ENVIADO!")
+            print("✓ CALL ENVIADO!")
             
-            print(f"\n⏰ Proximo: {time.strftime('%H:%M', time.localtime(time.time() + 3600))}")
+            print(f"\n⏰ Proximo call: {time.strftime('%H:%M', time.localtime(time.time() + 3600))}")
             time.sleep(3600)
             
         except Exception as e:

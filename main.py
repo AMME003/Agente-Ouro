@@ -114,19 +114,3 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Erro: {e}")
             time.sleep(300)
-```
-
-## 🎯 Mudanças importantes:
-
-1. ✅ **Busca preços REAIS** do XAUUSD e DXY do Investing.com
-2. ✅ **Mostra os preços** na mensagem para você conferir
-3. ✅ **Instrui a IA** para usar SOMENTE os dados fornecidos
-4. ✅ **Temperature 0.5** (menos criativo, mais preciso)
-
-## 📊 Agora o relatório vai incluir:
-```
-RELATORIO OURO/DXY
-
-XAUUSD: 2719.45 | DXY: 108.23
-
-[Análise baseada nos preços reais]
